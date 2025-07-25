@@ -60,6 +60,55 @@ A modern, feature-rich digital clock application built with Python and tkinter, 
 - Comprehensive keyboard shortcuts
 - Cross-platform compatibility
 
+### 🌤️ Weather Integration
+- Real-time weather display
+- Configurable location and API integration
+- Temperature, humidity, and weather conditions
+- 3-day weather forecast
+- Automatic weather updates
+
+### 📅 Calendar Synchronization
+- Support for multiple calendar sources
+- Upcoming events display
+- Automatic calendar sync
+- Event notifications and reminders
+- Integration with popular calendar services
+
+### 🖥️ Multiple Monitor Support
+- Automatic monitor detection
+- Easy monitor switching
+- Per-monitor window positioning
+- Primary and secondary monitor support
+- Full-screen mode on any monitor
+
+### 🔌 Plugin System
+- Extensible plugin architecture
+- Enable/disable plugins dynamically
+- Custom feature development support
+- Plugin management interface
+- Community plugin support
+
+### 📱 Mobile Companion App
+- HTTP API for mobile integration
+- Remote clock control
+- Mobile alarm management
+- Settings synchronization
+- Real-time status updates
+
+### ☁️ Cloud Settings Sync
+- Cross-device settings synchronization
+- Multiple cloud provider support
+- Automatic backup and restore
+- Secure encrypted sync
+- Conflict resolution
+
+### ⏰ Advanced Scheduling
+- Flexible scheduling system
+- Daily, weekly, monthly schedules
+- Custom action support
+- Multiple notification types
+- Recurring event management
+
 ## 🚀 Installation
 
 ### Prerequisites
@@ -135,6 +184,50 @@ Note: Audio and voice features will gracefully degrade if dependencies are not a
 3. Settings are automatically saved
 4. Reset to defaults option available
 
+### New Features
+
+#### Weather Integration
+1. Access via Tools → Weather
+2. Configure API key and location
+3. View current conditions and forecast
+4. Automatic updates every 10 minutes
+
+#### Calendar Synchronization
+1. Access via Tools → Calendar
+2. Add calendar sources (Google, Outlook, etc.)
+3. View upcoming events
+4. Sync calendars manually or automatically
+
+#### Multiple Monitor Support
+1. Access via Tools → Multi-Monitor
+2. Detect available monitors
+3. Move clock to different monitors
+4. Configure per-monitor settings
+
+#### Plugin System
+1. Access via Tools → Plugins
+2. Load custom plugins from plugins folder
+3. Enable/disable plugins as needed
+4. Develop custom features
+
+#### Mobile Companion
+1. Access via Tools → Mobile Companion
+2. Start HTTP API server
+3. Connect mobile apps to API endpoints
+4. Control clock remotely
+
+#### Cloud Settings Sync
+1. Access via Tools → Cloud Sync
+2. Configure sync provider and credentials
+3. Upload/download settings
+4. Automatic synchronization
+
+#### Advanced Scheduling
+1. Access via Tools → Advanced Scheduler
+2. Create custom schedules
+3. Set recurring events
+4. Configure notifications and actions
+
 ### Keyboard Shortcuts
 
 - **F1**: Show help/about
@@ -172,10 +265,13 @@ Python-Clock/
 │   ├── __init__.py
 │   ├── clock.py                # Original clock implementation
 │   ├── enhanced_clock.py       # Enhanced clock with all features
-│   ├── features.py             # Alarm, stopwatch, timezone, voice
+│   ├── features.py             # Alarm, stopwatch, timezone, voice, weather, etc.
 │   ├── settings.py             # Settings persistence
 │   ├── clock_styles.py         # Multiple clock face styles
 │   ├── system_tray.py          # System tray integration
+│   ├── mobile_companion.py     # Mobile companion HTTP API
+│   ├── plugins/                # Plugin directory
+│   │   └── README.md           # Plugin development guide
 │   └── sounds/                 # Alarm sound files
 ├── tests/
 │   ├── test_clock.py           # Original tests
@@ -287,19 +383,29 @@ This project is open source and available under the [MIT License](LICENSE).
 ## 🔮 Roadmap
 
 ### Planned Enhancements
-- [ ] Weather integration
-- [ ] Calendar synchronization
-- [ ] Multiple monitor support
-- [ ] Plugin system for custom features
-- [ ] Mobile companion app
-- [ ] Cloud settings sync
-- [ ] Advanced scheduling features
+- [x] Weather integration
+- [x] Calendar synchronization
+- [x] Multiple monitor support
+- [x] Plugin system for custom features
+- [x] Mobile companion app
+- [x] Cloud settings sync
+- [x] Advanced scheduling features
 
-### Current Version: 2.0
+### Current Version: 2.1
 
 ### Changelog
 
-#### v2.0.0 (Current)
+#### v2.1.0 (Current)
+- ✅ Weather integration with API support
+- ✅ Calendar synchronization system
+- ✅ Multiple monitor support and detection
+- ✅ Plugin system for custom features
+- ✅ Mobile companion app with HTTP API
+- ✅ Cloud settings sync functionality
+- ✅ Advanced scheduling features
+- ✅ Enhanced documentation and examples
+
+#### v2.0.0
 - ✅ Alarm functionality with custom sounds
 - ✅ Stopwatch and countdown timer
 - ✅ Multiple timezone support

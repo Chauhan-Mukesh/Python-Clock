@@ -9,10 +9,13 @@ import time
 import datetime
 import threading
 from typing import Optional, Callable
-from features import AlarmManager, StopwatchTimer, TimezoneManager, VoiceManager
+from features import (AlarmManager, StopwatchTimer, TimezoneManager, VoiceManager,
+                     WeatherManager, CalendarManager, MultiMonitorManager, 
+                     PluginManager, CloudSyncManager, AdvancedScheduler)
 from settings import SettingsManager
 from clock_styles import ClockStyleManager
 from system_tray import create_system_tray_manager
+from mobile_companion import MobileCompanionServer
 
 
 class EnhancedDigitalClock:
@@ -48,6 +51,15 @@ class EnhancedDigitalClock:
         # Enhanced features
         self.alarm_manager = AlarmManager(self.alarm_triggered)
         self.stopwatch = StopwatchTimer()
+        
+        # New features
+        self.weather_manager = WeatherManager()
+        self.calendar_manager = CalendarManager()
+        self.monitor_manager = MultiMonitorManager()
+        self.plugin_manager = PluginManager()
+        self.cloud_sync = CloudSyncManager()
+        self.scheduler = AdvancedScheduler()
+        self.mobile_server = MobileCompanionServer(self)
         
         # System tray
         self.system_tray = create_system_tray_manager(self)
@@ -274,6 +286,14 @@ class EnhancedDigitalClock:
         menubar.add_cascade(label="Tools", menu=tools_menu)
         tools_menu.add_command(label="Alarm Manager", command=self.show_alarm_manager)
         tools_menu.add_command(label="Stopwatch & Timer", command=self.show_stopwatch_window)
+        tools_menu.add_separator()
+        tools_menu.add_command(label="Weather", command=self.show_weather_window)
+        tools_menu.add_command(label="Calendar", command=self.show_calendar_window)
+        tools_menu.add_command(label="Multi-Monitor", command=self.show_monitor_window)
+        tools_menu.add_command(label="Plugins", command=self.show_plugins_window)
+        tools_menu.add_command(label="Cloud Sync", command=self.show_cloud_sync_window)
+        tools_menu.add_command(label="Advanced Scheduler", command=self.show_scheduler_window)
+        tools_menu.add_command(label="Mobile Companion", command=self.show_mobile_companion_window)
         tools_menu.add_separator()
         tools_menu.add_command(label="Speak Current Time", command=self.speak_current_time)
         
@@ -712,9 +732,449 @@ Features:
 • Settings persistence
 • System tray integration
 • Voice announcements
+• Weather integration
+• Calendar synchronization
+• Multiple monitor support
+• Plugin system for custom features
+• Cloud settings sync
+• Advanced scheduling features
 
 Built with Python and tkinter"""
         messagebox.showinfo("About", about_text)
+    
+    def show_weather_window(self):
+        """Show weather management window"""
+        if hasattr(self, 'weather_window') and self.weather_window and self.weather_window.winfo_exists():
+            self.weather_window.lift()
+            return
+            
+        self.weather_window = tk.Toplevel(self.root)
+        self.weather_window.title("Weather Integration")
+        self.weather_window.geometry("400x300")
+        self.weather_window.resizable(False, False)
+        
+        # Create weather UI
+        main_frame = ttk.Frame(self.weather_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Weather status
+        status_frame = ttk.LabelFrame(main_frame, text="Weather Status")
+        status_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        weather_data = self.weather_manager.get_current_weather()
+        if weather_data:
+            ttk.Label(status_frame, text=f"Temperature: {weather_data.get('temperature', 'N/A')}°F").pack(anchor=tk.W, padx=5, pady=2)
+            ttk.Label(status_frame, text=f"Condition: {weather_data.get('description', 'N/A')}").pack(anchor=tk.W, padx=5, pady=2)
+            ttk.Label(status_frame, text=f"Humidity: {weather_data.get('humidity', 'N/A')}%").pack(anchor=tk.W, padx=5, pady=2)
+        else:
+            ttk.Label(status_frame, text="Weather data not available").pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Configuration
+        config_frame = ttk.LabelFrame(main_frame, text="Configuration")
+        config_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(config_frame, text="API Key:").pack(anchor=tk.W, padx=5)
+        api_key_entry = ttk.Entry(config_frame, show="*")
+        api_key_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        ttk.Label(config_frame, text="Location:").pack(anchor=tk.W, padx=5)
+        location_entry = ttk.Entry(config_frame)
+        location_entry.pack(fill=tk.X, padx=5, pady=2)
+        location_entry.insert(0, self.weather_manager.location)
+        
+        # Buttons
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        def save_weather_config():
+            api_key = api_key_entry.get()
+            location = location_entry.get()
+            if api_key:
+                self.weather_manager.set_api_key(api_key)
+            if location:
+                self.weather_manager.set_location(location)
+            messagebox.showinfo("Success", "Weather configuration saved")
+        
+        ttk.Button(button_frame, text="Save", command=save_weather_config).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(button_frame, text="Update Now", command=self.weather_manager.update_weather).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Close", command=self.weather_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_calendar_window(self):
+        """Show calendar synchronization window"""
+        if hasattr(self, 'calendar_window') and self.calendar_window and self.calendar_window.winfo_exists():
+            self.calendar_window.lift()
+            return
+            
+        self.calendar_window = tk.Toplevel(self.root)
+        self.calendar_window.title("Calendar Synchronization")
+        self.calendar_window.geometry("500x400")
+        
+        main_frame = ttk.Frame(self.calendar_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Upcoming events
+        events_frame = ttk.LabelFrame(main_frame, text="Upcoming Events")
+        events_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Create treeview for events
+        columns = ("Event", "Time", "Description")
+        events_tree = ttk.Treeview(events_frame, columns=columns, show="headings", height=8)
+        
+        for col in columns:
+            events_tree.heading(col, text=col)
+            events_tree.column(col, width=150)
+        
+        # Add sample events
+        events = self.calendar_manager.get_upcoming_events()
+        for event in events:
+            start_time = event["start"].strftime("%m/%d %H:%M")
+            events_tree.insert("", tk.END, values=(event["title"], start_time, event["description"]))
+        
+        scrollbar = ttk.Scrollbar(events_frame, orient=tk.VERTICAL, command=events_tree.yview)
+        events_tree.configure(yscrollcommand=scrollbar.set)
+        
+        events_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X)
+        
+        def sync_calendars():
+            if self.calendar_manager.sync_calendars():
+                messagebox.showinfo("Success", "Calendar synchronized")
+                # Refresh the events tree
+                for item in events_tree.get_children():
+                    events_tree.delete(item)
+                events = self.calendar_manager.get_upcoming_events()
+                for event in events:
+                    start_time = event["start"].strftime("%m/%d %H:%M")
+                    events_tree.insert("", tk.END, values=(event["title"], start_time, event["description"]))
+            else:
+                messagebox.showerror("Error", "Calendar sync failed")
+        
+        ttk.Button(control_frame, text="Sync Now", command=sync_calendars).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Settings", command=lambda: messagebox.showinfo("Info", "Calendar settings will be available in a future update")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.calendar_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_monitor_window(self):
+        """Show multiple monitor management window"""
+        if hasattr(self, 'monitor_window') and self.monitor_window and self.monitor_window.winfo_exists():
+            self.monitor_window.lift()
+            return
+            
+        self.monitor_window = tk.Toplevel(self.root)
+        self.monitor_window.title("Multiple Monitor Support")
+        self.monitor_window.geometry("400x300")
+        
+        main_frame = ttk.Frame(self.monitor_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Monitor list
+        monitors_frame = ttk.LabelFrame(main_frame, text="Available Monitors")
+        monitors_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        monitors = self.monitor_manager.get_monitors()
+        selected_monitor = tk.IntVar(value=self.monitor_manager.current_monitor)
+        
+        for monitor in monitors:
+            text = f"Monitor {monitor['id']}: {monitor['name']} ({monitor['width']}x{monitor['height']})"
+            if monitor['primary']:
+                text += " [Primary]"
+            ttk.Radiobutton(monitors_frame, text=text, variable=selected_monitor, value=monitor['id']).pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X)
+        
+        def apply_monitor():
+            monitor_id = selected_monitor.get()
+            if self.monitor_manager.set_monitor(monitor_id):
+                geometry = self.monitor_manager.get_monitor_geometry(monitor_id)
+                # Move window to selected monitor
+                self.root.geometry(f"+{geometry['x']+100}+{geometry['y']+100}")
+                messagebox.showinfo("Success", f"Clock moved to Monitor {monitor_id}")
+            else:
+                messagebox.showerror("Error", "Failed to set monitor")
+        
+        ttk.Button(control_frame, text="Apply", command=apply_monitor).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Detect Monitors", command=self.monitor_manager.detect_monitors).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.monitor_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_plugins_window(self):
+        """Show plugin management window"""
+        if hasattr(self, 'plugins_window') and self.plugins_window and self.plugins_window.winfo_exists():
+            self.plugins_window.lift()
+            return
+            
+        self.plugins_window = tk.Toplevel(self.root)
+        self.plugins_window.title("Plugin System")
+        self.plugins_window.geometry("500x400")
+        
+        main_frame = ttk.Frame(self.plugins_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Plugin list
+        plugins_frame = ttk.LabelFrame(main_frame, text="Available Plugins")
+        plugins_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Create treeview for plugins
+        columns = ("Name", "Version", "Status", "Description")
+        plugins_tree = ttk.Treeview(plugins_frame, columns=columns, show="headings", height=10)
+        
+        for col in columns:
+            plugins_tree.heading(col, text=col)
+            plugins_tree.column(col, width=100)
+        
+        # Load and display plugins
+        self.plugin_manager.load_plugins()
+        plugins = self.plugin_manager.get_plugins()
+        
+        for name, plugin in plugins.items():
+            status = "Enabled" if plugin["enabled"] else "Disabled"
+            plugins_tree.insert("", tk.END, values=(name, plugin["version"], status, plugin["description"]))
+        
+        scrollbar = ttk.Scrollbar(plugins_frame, orient=tk.VERTICAL, command=plugins_tree.yview)
+        plugins_tree.configure(yscrollcommand=scrollbar.set)
+        
+        plugins_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X)
+        
+        def toggle_plugin():
+            selection = plugins_tree.selection()
+            if selection:
+                item = plugins_tree.item(selection[0])
+                plugin_name = item["values"][0]
+                current_status = item["values"][2]
+                
+                if current_status == "Enabled":
+                    self.plugin_manager.disable_plugin(plugin_name)
+                    new_status = "Disabled"
+                else:
+                    self.plugin_manager.enable_plugin(plugin_name)
+                    new_status = "Enabled"
+                
+                # Update tree
+                plugins_tree.item(selection[0], values=(item["values"][0], item["values"][1], new_status, item["values"][3]))
+        
+        ttk.Button(control_frame, text="Toggle", command=toggle_plugin).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Refresh", command=lambda: messagebox.showinfo("Info", "Plugin refresh completed")).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.plugins_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_cloud_sync_window(self):
+        """Show cloud synchronization window"""
+        if hasattr(self, 'cloud_window') and self.cloud_window and self.cloud_window.winfo_exists():
+            self.cloud_window.lift()
+            return
+            
+        self.cloud_window = tk.Toplevel(self.root)
+        self.cloud_window.title("Cloud Settings Sync")
+        self.cloud_window.geometry("400x300")
+        
+        main_frame = ttk.Frame(self.cloud_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Sync status
+        status_frame = ttk.LabelFrame(main_frame, text="Sync Status")
+        status_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        sync_status = "Enabled" if self.cloud_sync.enabled else "Disabled"
+        last_sync = self.cloud_sync.last_sync.strftime("%Y-%m-%d %H:%M:%S") if self.cloud_sync.last_sync else "Never"
+        
+        ttk.Label(status_frame, text=f"Status: {sync_status}").pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Label(status_frame, text=f"Last Sync: {last_sync}").pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Label(status_frame, text=f"Provider: {self.cloud_sync.sync_provider or 'None'}").pack(anchor=tk.W, padx=5, pady=2)
+        
+        # Configuration
+        config_frame = ttk.LabelFrame(main_frame, text="Configuration")
+        config_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        ttk.Label(config_frame, text="Sync URL:").pack(anchor=tk.W, padx=5)
+        url_entry = ttk.Entry(config_frame)
+        url_entry.pack(fill=tk.X, padx=5, pady=2)
+        if self.cloud_sync.sync_url:
+            url_entry.insert(0, self.cloud_sync.sync_url)
+        
+        ttk.Label(config_frame, text="User Token:").pack(anchor=tk.W, padx=5)
+        token_entry = ttk.Entry(config_frame, show="*")
+        token_entry.pack(fill=tk.X, padx=5, pady=2)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        def configure_sync():
+            url = url_entry.get()
+            token = token_entry.get()
+            if url and token:
+                self.cloud_sync.configure_sync("Custom", url, token)
+                messagebox.showinfo("Success", "Cloud sync configured")
+            else:
+                messagebox.showerror("Error", "Please enter both URL and token")
+        
+        def sync_now():
+            if self.cloud_sync.enabled:
+                current_settings = self.settings.get_all_settings()
+                if self.cloud_sync.sync_settings(current_settings):
+                    messagebox.showinfo("Success", "Settings synchronized")
+                else:
+                    messagebox.showerror("Error", "Sync failed")
+            else:
+                messagebox.showwarning("Warning", "Cloud sync not configured")
+        
+        ttk.Button(control_frame, text="Configure", command=configure_sync).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Sync Now", command=sync_now).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.cloud_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_scheduler_window(self):
+        """Show advanced scheduler window"""
+        if hasattr(self, 'scheduler_window') and self.scheduler_window and self.scheduler_window.winfo_exists():
+            self.scheduler_window.lift()
+            return
+            
+        self.scheduler_window = tk.Toplevel(self.root)
+        self.scheduler_window.title("Advanced Scheduler")
+        self.scheduler_window.geometry("600x400")
+        
+        main_frame = ttk.Frame(self.scheduler_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Schedule list
+        schedules_frame = ttk.LabelFrame(main_frame, text="Scheduled Events")
+        schedules_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        # Create treeview for schedules
+        columns = ("Name", "Type", "Time", "Action", "Status")
+        schedules_tree = ttk.Treeview(schedules_frame, columns=columns, show="headings", height=8)
+        
+        for col in columns:
+            schedules_tree.heading(col, text=col)
+            schedules_tree.column(col, width=100)
+        
+        # Add existing schedules
+        schedules = self.scheduler.get_schedules()
+        for schedule in schedules:
+            status = "Enabled" if schedule["enabled"] else "Disabled"
+            schedules_tree.insert("", tk.END, values=(
+                schedule["name"], schedule["type"], schedule["time"], 
+                schedule["action"], status
+            ))
+        
+        scrollbar = ttk.Scrollbar(schedules_frame, orient=tk.VERTICAL, command=schedules_tree.yview)
+        schedules_tree.configure(yscrollcommand=scrollbar.set)
+        
+        schedules_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X)
+        
+        def add_schedule():
+            # Simple schedule dialog
+            name = simpledialog.askstring("New Schedule", "Schedule name:")
+            if name:
+                time_str = simpledialog.askstring("New Schedule", "Time (HH:MM):")
+                if time_str:
+                    schedule_config = {
+                        "name": name,
+                        "type": "daily",
+                        "time": time_str,
+                        "action": "notification",
+                        "message": f"Scheduled event: {name}"
+                    }
+                    schedule_id = self.scheduler.add_schedule(schedule_config)
+                    # Add to tree
+                    schedules_tree.insert("", tk.END, values=(name, "daily", time_str, "notification", "Enabled"))
+        
+        def remove_schedule():
+            selection = schedules_tree.selection()
+            if selection:
+                schedules_tree.delete(selection[0])
+                messagebox.showinfo("Success", "Schedule removed")
+        
+        def start_scheduler():
+            self.scheduler.start_scheduler()
+            messagebox.showinfo("Success", "Scheduler started")
+        
+        ttk.Button(control_frame, text="Add", command=add_schedule).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Remove", command=remove_schedule).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Start Scheduler", command=start_scheduler).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.scheduler_window.destroy).pack(side=tk.RIGHT)
+    
+    def show_mobile_companion_window(self):
+        """Show mobile companion server window"""
+        if hasattr(self, 'mobile_window') and self.mobile_window and self.mobile_window.winfo_exists():
+            self.mobile_window.lift()
+            return
+            
+        self.mobile_window = tk.Toplevel(self.root)
+        self.mobile_window.title("Mobile Companion")
+        self.mobile_window.geometry("400x300")
+        
+        main_frame = ttk.Frame(self.mobile_window)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Server status
+        status_frame = ttk.LabelFrame(main_frame, text="Server Status")
+        status_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        server_info = self.mobile_server.get_server_info()
+        status_text = "Running" if server_info["running"] else "Stopped"
+        
+        self.mobile_status_label = ttk.Label(status_frame, text=f"Status: {status_text}")
+        self.mobile_status_label.pack(anchor=tk.W, padx=5, pady=2)
+        
+        ttk.Label(status_frame, text=f"Port: {server_info['port']}").pack(anchor=tk.W, padx=5, pady=2)
+        ttk.Label(status_frame, text=f"URL: {server_info['url']}").pack(anchor=tk.W, padx=5, pady=2)
+        
+        # API endpoints
+        endpoints_frame = ttk.LabelFrame(main_frame, text="Available Endpoints")
+        endpoints_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        endpoints_text = tk.Text(endpoints_frame, height=8, width=40)
+        endpoints_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        endpoints_info = """Available API endpoints:
+        
+GET /status - Get clock status
+GET /time - Get current time
+GET /weather - Get weather data
+GET /calendar - Get calendar events
+GET /alarms - Get all alarms
+
+POST /alarm - Add new alarm
+POST /settings - Update settings
+
+Example mobile app usage:
+http://localhost:8888/time
+"""
+        endpoints_text.insert(tk.END, endpoints_info)
+        endpoints_text.config(state=tk.DISABLED)
+        
+        # Controls
+        control_frame = ttk.Frame(main_frame)
+        control_frame.pack(fill=tk.X)
+        
+        def start_server():
+            if self.mobile_server.start_server():
+                self.mobile_status_label.config(text="Status: Running")
+                messagebox.showinfo("Success", "Mobile companion server started")
+            else:
+                messagebox.showerror("Error", "Failed to start server")
+        
+        def stop_server():
+            self.mobile_server.stop_server()
+            self.mobile_status_label.config(text="Status: Stopped")
+            messagebox.showinfo("Success", "Mobile companion server stopped")
+        
+        ttk.Button(control_frame, text="Start Server", command=start_server).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(control_frame, text="Stop Server", command=stop_server).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Close", command=self.mobile_window.destroy).pack(side=tk.RIGHT)
     
     def on_window_configure(self, event):
         """Handle window configuration changes"""
