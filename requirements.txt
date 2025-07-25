@@ -1,5 +1,8 @@
 # Core dependencies for Python Clock Application
-# No external dependencies required - using built-in tkinter for GUI
-# Optional: uncomment below for enhanced UI styling
-# customtkinter>=5.2.0
-# pygame>=2.5.0  # For alarm sounds
+# Enhanced features require additional packages
+pygame>=2.5.0  # For alarm sounds and audio
+pyttsx3>=2.90  # For voice announcements  
+pytz>=2023.3   # For timezone support
+plyer>=2.1.0   # For system tray integration
+pystray>=0.19.0  # For advanced system tray
+Pillow>=10.0.0   # For system tray icons
