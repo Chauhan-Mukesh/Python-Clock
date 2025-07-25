@@ -1,0 +1,5 @@
+# Core dependencies for Python Clock Application
+# No external dependencies required - using built-in tkinter for GUI
+# Optional: uncomment below for enhanced UI styling
+# customtkinter>=5.2.0
+# pygame>=2.5.0  # For alarm sounds
