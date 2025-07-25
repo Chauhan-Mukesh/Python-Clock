@@ -1,5 +1,5 @@
 """
-Digital Clock Application with GUI
+Enhanced Digital Clock Application with GUI
 A modern, feature-rich digital clock built with tkinter
 """
 
@@ -9,22 +9,34 @@ import time
 import datetime
 import threading
 from typing import Optional, Callable
-from features import AlarmManager, StopwatchTimer
+from features import AlarmManager, StopwatchTimer, TimezoneManager, VoiceManager
+from settings import SettingsManager
+from clock_styles import ClockStyleManager
+from system_tray import create_system_tray_manager
 
 
 class DigitalClock:
-    """Main Digital Clock Application Class"""
+    """Enhanced Digital Clock Application Class"""
     
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Python Digital Clock")
-        self.root.geometry("600x500")
-        self.root.minsize(400, 350)
+        self.root.title("Enhanced Python Digital Clock")
+        
+        # Initialize managers
+        self.settings = SettingsManager()
+        self.style_manager = ClockStyleManager()
+        self.timezone_manager = TimezoneManager()
+        self.voice_manager = VoiceManager()
+        
+        # Load settings
+        self.load_initial_settings()
+        
+        # Set window geometry
+        geometry = self.settings.get("window_geometry", "700x600")
+        self.root.geometry(geometry)
+        self.root.minsize(500, 450)
         
         # Application state
-        self.is_24_hour = True
-        self.current_timezone = "Local"
-        self.theme = "light"  # light or dark
         self.is_running = True
         
         # UI Variables
@@ -33,13 +45,17 @@ class DigitalClock:
         self.status_var = tk.StringVar()
         self.status_var.set("Ready")
         
-        # Features
+        # Enhanced features
         self.alarm_manager = AlarmManager(self.alarm_triggered)
         self.stopwatch = StopwatchTimer()
+        
+        # System tray
+        self.system_tray = create_system_tray_manager(self)
         
         # Windows
         self.alarm_window = None
         self.stopwatch_window = None
+        self.settings_window = None
         
         # Initialize UI
         self.setup_styles()
@@ -50,12 +66,44 @@ class DigitalClock:
         self.clock_thread = threading.Thread(target=self.update_clock, daemon=True)
         self.clock_thread.start()
         
+        # Enable system tray if requested
+        if self.settings.get("system_tray_enabled", False):
+            self.system_tray.enable_system_tray()
+        
         # Handle window close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+        # Bind window events
+        self.root.bind('<Configure>', self.on_window_configure)
+    
+    def load_initial_settings(self):
+        """Load initial settings from persistent storage"""
+        self.is_24_hour = self.settings.get("is_24_hour", True)
+        self.current_timezone = self.settings.get("timezone", "Local")
+        self.theme = self.settings.get("theme", "light")
+        self.clock_style = self.settings.get("clock_style", "digital")
+        self.show_seconds = self.settings.get("show_seconds", True)
+        self.show_date = self.settings.get("show_date", True)
+        self.voice_enabled = self.settings.get("voice_enabled", False)
+        
+        # Set timezone
+        self.timezone_manager.set_timezone(self.current_timezone)
+        
+        # Set voice properties
+        if self.voice_enabled and self.voice_manager.enabled:
+            self.voice_manager.set_rate(self.settings.get("voice_rate", 150))
+            self.voice_manager.set_volume(self.settings.get("voice_volume", 0.9))
+    
     
     def setup_styles(self):
         """Setup custom styles for the application"""
         self.style = ttk.Style()
+        
+        # Get style configuration
+        if hasattr(self, 'style_manager') and hasattr(self, 'clock_style'):
+            style_config = self.style_manager.get_style(self.clock_style).get_style_config(self.theme)
+        else:
+            style_config = {}
         
         if self.theme == "dark":
             self.bg_color = "#2b2b2b"
@@ -71,10 +119,13 @@ class DigitalClock:
         self.root.configure(bg=self.bg_color)
         
         # Configure custom styles
+        font_family = self.settings.get("font_family", "Courier New") if hasattr(self, 'settings') else "Courier New"
+        font_size = self.settings.get("font_size", 42) if hasattr(self, 'settings') else 42
+        
         self.style.configure("Clock.TLabel", 
                            background=self.bg_color,
                            foreground=self.fg_color,
-                           font=("Courier New", 42, "bold"))
+                           font=(font_family, font_size, "bold"))
         
         self.style.configure("Date.TLabel",
                            background=self.bg_color,
