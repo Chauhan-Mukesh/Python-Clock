@@ -27,7 +27,22 @@ class SettingsManager:
             "show_date": True,
             "window_geometry": "600x500",
             "system_tray_enabled": False,
-            "auto_save": True
+            "auto_save": True,
+            # New feature settings
+            "weather_enabled": False,
+            "weather_api_key": "",
+            "weather_location": "New York",
+            "calendar_enabled": False,
+            "calendar_sources": [],
+            "multi_monitor_enabled": False,
+            "current_monitor": 0,
+            "plugins_enabled": True,
+            "enabled_plugins": [],
+            "cloud_sync_enabled": False,
+            "cloud_sync_url": "",
+            "cloud_sync_token": "",
+            "scheduler_enabled": False,
+            "scheduler_autostart": True
         }
         self.settings = self.load_settings()
     
